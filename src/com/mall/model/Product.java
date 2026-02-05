@@ -1,8 +1,14 @@
 package com.mall.model;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Represents a product in the shopping mall.
+ * Responsible for holding product data and managing user ratings.
+ */
 public class Product {
     private String id;
     private String name;
@@ -11,11 +17,10 @@ public class Product {
     private int stockQty;
     private String description;
     private String imagePath;
-    private double averageRating;
-    private int ratingCount;
+    private Map<Customer, Integer> ratings;
 
     public Product(String id, String name, String category, BigDecimal price,
-            int stockQty, String description, String imagePath) {
+                   int stockQty, String description, String imagePath) {
         this.id = id;
         this.name = name;
         this.category = category;
@@ -23,11 +28,39 @@ public class Product {
         this.stockQty = stockQty;
         this.description = description;
         this.imagePath = imagePath;
-        this.averageRating = 0.0;
-        this.ratingCount = 0;
+        this.ratings = new HashMap<>();
     }
 
-    // Getters & Setters
+    /**
+     * Adds a new rating or updates an existing one for a specific customer.
+     * This ensures each customer has exactly one rating per product.
+     *
+     * @param customer indicates the customer.
+     * @param rating   Integer value of the rating.
+     */
+    public void addOrUpdateRating(Customer customer, int rating) {
+        // If the customer already exists in the map, .put() will overwrite the old
+        // value.
+        ratings.put(customer, rating);
+    }
+
+    /**
+     * Calculates the average rating.
+     *
+     * @return The arithmetic mean of all ratings, or 0.0 if no ratings exist.
+     */
+    public double getAverageRating() {
+        if (ratings.isEmpty()) {
+            return 0.0;
+        }
+        double sum = 0;
+        for (int r : ratings.values()) {
+            sum += r;
+        }
+        return sum / ratings.size();
+    }
+
+    // getters:
     public String getId() {
         return id;
     }
@@ -52,6 +85,15 @@ public class Product {
         return description;
     }
 
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public Map<Customer, Integer> getRatings(){
+        return ratings;
+    }
+
+    // setters:
     public void setName(String name) {
         this.name = name;
     }
@@ -91,19 +133,5 @@ public class Product {
     @Override
     public int hashCode() {
         return Objects.hash(id);
-    }
-
-    public void addRating(int score) {
-        double totalScore = (this.averageRating * this.ratingCount) + score;
-        this.ratingCount++;
-        this.averageRating = totalScore / this.ratingCount;
-    }
-
-    public double getAverageRating() {
-        return averageRating;
-    }
-
-    public String getImagePath() {
-        return imagePath;
     }
 }
