@@ -3,6 +3,9 @@ package com.mall.model;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 
+/**
+ * Represents a historical record of a completed transaction.
+ */
 public class SaleRecord {
     private String transactionId;
     private String customerUsername;
@@ -11,8 +14,11 @@ public class SaleRecord {
     private BigDecimal amountPaid;
     private LocalDateTime date;
 
-    public SaleRecord(String transactionId, String customerUsername, String productName, int quantity,
-            BigDecimal amountPaid, LocalDateTime date) {
+    /**
+     * Constructs a permanent record of a sale.
+     */
+    public SaleRecord(String transactionId, String customerUsername, String productName,
+                      int quantity, BigDecimal amountPaid, LocalDateTime date) {
         this.transactionId = transactionId;
         this.customerUsername = customerUsername;
         this.productName = productName;
@@ -21,7 +27,7 @@ public class SaleRecord {
         this.date = date;
     }
 
-    // Getters
+    // Getters for all fields to support Admin review features
     public String getTransactionId() {
         return transactionId;
     }
