@@ -8,27 +8,45 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Service responsible for user authentication and session management.
+ */
 public class AuthenticationService {
-    private List<User> users;
+    private final List<User> users;
     private User currentUser;
 
+    /**
+     * @param users The global list of users loaded from the persistence layer.
+     */
     public AuthenticationService(List<User> users) {
         this.users = users;
     }
 
-    public List<User> getAllUsers() {
-        return users;
-    }
+    /**
+     * Registers a new customer with a unique ID and zero balance.
+     * Includes a check to prevent duplicate usernames.
+     *
+     * @return true if registration successful, false if username taken.
+     */
+    public boolean registerCustomer(String username, String password) {
+        boolean exists = users.stream().anyMatch(u -> u.getUsername().equalsIgnoreCase(username));
+        if (exists)
+            return false;
 
-    public void registerCustomer(String username, String password) {
         Customer newCustomer = new Customer(
                 UUID.randomUUID().toString(),
                 username,
                 password,
                 BigDecimal.ZERO);
         users.add(newCustomer);
+        return true;
     }
 
+    /**
+     * Validates credentials and sets the active session.
+     *
+     * @return true if credentials match a known user.
+     */
     public boolean login(String username, String password) {
         Optional<User> found = users.stream()
                 .filter(u -> u.getUsername().equals(username) && u.getPassword().equals(password))
@@ -41,25 +59,6 @@ public class AuthenticationService {
         return false;
     }
 
-    public User getCurrentUser() {
-        return currentUser;
-    }
-
-    public Customer getCurrentCustomer() {
-        if (currentUser instanceof com.mall.model.Customer) {
-            return (com.mall.model.Customer) currentUser;
-        }
-        return null;
-    }
-
-    public boolean isCustomer() {
-        return currentUser instanceof Customer;
-    }
-
-    public void depositBalance(BigDecimal amount) {
-        if (currentUser instanceof Customer) {
-            Customer c = (Customer) currentUser;
-            c.setBalance(c.getBalance().add(amount));
-        }
-    }
-}
+/**
+ * Clears the current session. Essential for multi-user support.
+ */
