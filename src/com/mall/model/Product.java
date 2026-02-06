@@ -20,7 +20,7 @@ public class Product {
     private Map<Customer, Integer> ratings;
 
     public Product(String id, String name, String category, BigDecimal price,
-                   int stockQty, String description, String imagePath) {
+            int stockQty, String description, String imagePath) {
         this.id = id;
         this.name = name;
         this.category = category;
@@ -34,7 +34,7 @@ public class Product {
     /**
      * Adds a new rating or updates an existing one for a specific customer.
      * This ensures each customer has exactly one rating per product.
-     *
+     * 
      * @param customer indicates the customer.
      * @param rating   Integer value of the rating.
      */
@@ -46,7 +46,7 @@ public class Product {
 
     /**
      * Calculates the average rating.
-     *
+     * 
      * @return The arithmetic mean of all ratings, or 0.0 if no ratings exist.
      */
     public double getAverageRating() {

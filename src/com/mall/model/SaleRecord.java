@@ -18,7 +18,7 @@ public class SaleRecord {
      * Constructs a permanent record of a sale.
      */
     public SaleRecord(String transactionId, String customerUsername, String productName,
-                      int quantity, BigDecimal amountPaid, LocalDateTime date) {
+            int quantity, BigDecimal amountPaid, LocalDateTime date) {
         this.transactionId = transactionId;
         this.customerUsername = customerUsername;
         this.productName = productName;
