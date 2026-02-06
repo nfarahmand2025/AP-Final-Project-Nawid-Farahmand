@@ -6,41 +6,30 @@ import com.mall.model.Product;
 import com.mall.model.User;
 import com.mall.model.SaleRecord;
 
-/**
- * DTO class that stores the current system state for persistence.
- * Contains products, users, and sales records.
- */
 public class SystemStateDto {
-
-    // List of all products in the system
+    // DTO fields: store lists representing the current saved state of the system
     private List<Product> products;
-
-    // List of all users (customers and admins)
     private List<User> users;
-
-    // List of sales transaction records
     private List<SaleRecord> sales;
 
-    /**
-     * Creates a SystemStateDto containing system data collections.
-     */
+    // Constructor: initialize the DTO with lists of products, users, and sales
     public SystemStateDto(List<Product> products, List<User> users, List<SaleRecord> sales) {
         this.products = products;
         this.users = users;
         this.sales = sales;
     }
 
-    // Returns list of products
+    // Getter for the list of products contained in the system state
     public List<Product> getProducts() {
         return products;
     }
 
-    // Returns list of users
+    // Getter for the list of users contained in the system state
     public List<User> getUsers() {
         return users;
     }
 
-    // Returns list of sales records
+    // Getter for the list of sales records contained in the system state
     public List<SaleRecord> getSales() {
         return sales;
     }

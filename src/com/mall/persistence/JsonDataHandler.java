@@ -8,32 +8,23 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Simple JSON-like persistence handler for the shopping mall system.
- * Uses manual string serialization/parsing (no JSON library).
+ * Handles JSON-like persistence for the Shopping Mall system.
+ * Implements DataStorageInterface to ensure modularity and loose coupling.
  */
 public class JsonDataHandler implements DataStorageInterface {
 
     // --- Save with Helper Methods for Serialization ---
-
-    /**
-     * Persist the given SystemStateDto to a file in a JSON-like format.
-     * Top-level arrays: "users", "products", "sales", "carts".
-     *
-     * @param filePath file to write to
-     * @param state    system state to persist
-     * @throws IOException on I/O error
-     */
     @Override
     public void save(String filePath, SystemStateDto state) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             writer.write("{\n");
 
-            // --- 1. Users: serialize all users (Administrator or Customer) ---
+            // 1. Users
             writer.write("  \"users\": [\n");
             List<User> users = state.getUsers();
             for (int i = 0; i < users.size(); i++) {
                 User u = users.get(i);
-                // Customer has balance, Administrators are saved with balance "0"
+                // If the user is a Customer, include their balance; admins get balance 0
                 String balance = (u instanceof Customer) ? ((Customer) u).getBalance().toString() : "0";
                 writer.write(String.format(
                         "    {\"role\":\"%s\", \"id\":\"%s\", \"user\":\"%s\", \"pass\":\"%s\", \"bal\":\"%s\"}",
@@ -44,11 +35,12 @@ public class JsonDataHandler implements DataStorageInterface {
             }
             writer.write("  ],\n");
 
-            // --- 2. Products: serialize product catalog and ratings ---
+            // 2. Products
             writer.write("  \"products\": [\n");
             List<Product> products = state.getProducts();
             for (int i = 0; i < products.size(); i++) {
                 Product p = products.get(i);
+                // Serialize each product including ratings by calling serializeRatings
                 writer.write(String.format(
                         "    {\"id\":\"%s\", \"name\":\"%s\", \"cat\":\"%s\", \"price\":\"%s\", \"stock\":%d, \"desc\":\"%s\", \"img\":\"%s\", \"ratings\":%s}",
                         p.getId(), p.getName(), p.getCategory(), p.getPrice(), p.getStockQty(),
@@ -58,12 +50,12 @@ public class JsonDataHandler implements DataStorageInterface {
                 writer.write("\n");
             }
             writer.write("  ],\n");
-
-            // --- 3. Sales: serialize sales history (one record per entry) ---
+            // 3. Sales
             writer.write("  \"sales\": [\n");
             List<SaleRecord> sales = state.getSales();
             for (int i = 0; i < sales.size(); i++) {
                 SaleRecord s = sales.get(i);
+                // Each sale record is written with transaction id, user, product, quantity, amount and date
                 writer.write(String.format(
                         "    {\"tid\":\"%s\", \"user\":\"%s\", \"prod\":\"%s\", \"qty\":%d, \"amt\":\"%s\", \"date\":\"%s\"}",
                         s.getTransactionId(), s.getCustomerUsername(), s.getProductName(),
@@ -74,8 +66,9 @@ public class JsonDataHandler implements DataStorageInterface {
             }
             writer.write("  ],\n");
 
-            // --- 4. Carts: serialize each customer's cart as product id + qty pairs ---
+            // 4. Carts
             writer.write("  \"carts\": [\n");
+            // Collect only customers (admins don't have carts)
             List<Customer> customers = users.stream()
                     .filter(u -> u instanceof Customer)
                     .map(u -> (Customer) u)
@@ -83,6 +76,7 @@ public class JsonDataHandler implements DataStorageInterface {
 
             for (int i = 0; i < customers.size(); i++) {
                 Customer c = customers.get(i);
+                // Serialize cart items for each customer using serializeCart
                 writer.write(String.format("    {\"userId\":\"%s\", \"items\":%s}",
                         c.getId(), serializeCart(c)));
                 if (i < customers.size() - 1)
@@ -93,12 +87,7 @@ public class JsonDataHandler implements DataStorageInterface {
         }
     }
 
-    /**
-     * Convert ratings map (Customer -> Integer) into a JSON-like object string.
-     *
-     * @param ratings ratings map
-     * @return serialized ratings or "{}" if empty
-     */
+    // Convert ratings map (Customer -> Integer) into a JSON-like object where keys are customer IDs
     private String serializeRatings(Map<Customer, Integer> ratings) {
         if (ratings == null || ratings.isEmpty())
             return "{}";
@@ -107,12 +96,7 @@ public class JsonDataHandler implements DataStorageInterface {
                 .collect(Collectors.joining(",")) + "}";
     }
 
-    /**
-     * Serialize a customer's cart as an array of {"pid":"...", "qty":N} items.
-     *
-     * @param customer the customer
-     * @return serialized cart array
-     */
+    // Convert a customer's cart into a JSON-like array of {pid, qty} objects
     private String serializeCart(Customer customer) {
         List<CartItem> items = customer.getCart().getItems();
         StringBuilder sb = new StringBuilder("[");
@@ -128,14 +112,6 @@ public class JsonDataHandler implements DataStorageInterface {
 
     // --- Loading with Parsing Logic ---
 
-    /**
-     * Load persisted state from file and rebuild products, users and sales.
-     * Expects the same compact JSON-like format produced by save(...).
-     *
-     * @param filePath path to read from
-     * @return reconstructed SystemStateDto
-     * @throws IOException on I/O error
-     */
     @Override
     public SystemStateDto load(String filePath) throws IOException {
         List<Product> products = new ArrayList<>();
@@ -145,13 +121,14 @@ public class JsonDataHandler implements DataStorageInterface {
 
         File file = new File(filePath);
         if (!file.exists())
+            // If file doesn't exist, return empty state placeholders
             return new SystemStateDto(products, users, sales);
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             String section = "";
             while ((line = reader.readLine()) != null) {
-                // Detect section headers and switch parsing mode
+                // Detect which top-level section we are in by matching section names
                 if (line.contains("\"users\"")) {
                     section = "U";
                     continue;
@@ -169,21 +146,22 @@ public class JsonDataHandler implements DataStorageInterface {
                     continue;
                 }
 
-                // Each object in the arrays starts with '{' (after indentation)
+                // Each object line starts with '{' according to the save format
                 if (line.trim().startsWith("{")) {
                     if (section.equals("U"))
-                        users.add(parseUser(line));                     // parse user object
+                        users.add(parseUser(line));
                     else if (section.equals("P"))
-                        products.add(parseProduct(line, users));        // parse product + ratings
+                        products.add(parseProduct(line, users));
                     else if (section.equals("S"))
-                        sales.add(parseSale(line));                     // parse sale record
+                        sales.add(parseSale(line));
                     else if (section.equals("C"))
-                        cartLines.add(line);                            // collect cart lines for later linking
+                        // Save cart lines to process after users/products are available
+                        cartLines.add(line);
                 }
             }
         }
 
-        // Rebuild carts after users & products are loaded, matching by userId & productId
+        // Rebuild carts after all users and products are loaded
         for (String cLine : cartLines) {
             String uId = extract(cLine, "userId");
             users.stream()
@@ -196,12 +174,7 @@ public class JsonDataHandler implements DataStorageInterface {
         return new SystemStateDto(products, users, sales);
     }
 
-    /**
-     * Parse a compact user object line into Administrator or Customer.
-     *
-     * @param l serialized user line
-     * @return User instance
-     */
+    // Parse a single user line into either Administrator or Customer based on role
     private User parseUser(String l) {
         if (extract(l, "role").equals("ADMIN"))
             return new Administrator(
@@ -215,13 +188,7 @@ public class JsonDataHandler implements DataStorageInterface {
                 new BigDecimal(extract(l, "bal")));
     }
 
-    /**
-     * Rebuild a customer's cart from its serialized line, resolving product ids.
-     *
-     * @param c       customer to populate
-     * @param line    serialized cart line
-     * @param catalog available products to resolve by id
-     */
+    // Rebuild customer's cart from serialized items using product catalog to find product objects
     private void rebuildCartFromLine(Customer c, String line, List<Product> catalog) {
         int start = line.indexOf("[") + 1;
         int end = line.lastIndexOf("]");
@@ -232,9 +199,10 @@ public class JsonDataHandler implements DataStorageInterface {
         if (itemsPart.isEmpty())
             return;
 
-        // Split entries like {"pid":"p1","qty":2}, {"pid":"p2","qty":1}
+        // Split entries on '},{' with optional whitespace — this produces each item JSON-ish chunk
         String[] entries = itemsPart.split("\\},\\s*\\{");
         for (String entry : entries) {
+            // Ensure each entry is a well-formed brace-enclosed object
             if (!entry.startsWith("{"))
                 entry = "{" + entry;
             if (!entry.endsWith("}"))
@@ -243,7 +211,7 @@ public class JsonDataHandler implements DataStorageInterface {
             String pid = extract(entry, "pid");
             int qty = Integer.parseInt(extract(entry, "qty"));
 
-            // Resolve product by id and add to cart (if found)
+            // Find the matching product in the loaded catalog and add to the customer's cart
             catalog.stream()
                     .filter(p -> p.getId().equals(pid))
                     .findFirst()
@@ -251,19 +219,13 @@ public class JsonDataHandler implements DataStorageInterface {
         }
     }
 
-    /**
-     * Extract the value for a key from a compact JSON-like single-line object.
-     * Supports quoted ("key":"value") and unquoted ("key":value) values.
-     *
-     * @param line serialized object line
-     * @param key  key to extract
-     * @return extracted value string
-     */
+    // Extract a value for a given key from a JSON-like line. Handles both quoted and unquoted numeric values.
     private String extract(String line, String key) {
         String pattern = "\"" + key + "\":\"";
         int start = line.indexOf(pattern) + pattern.length();
         int end = line.indexOf("\"", start);
         if (line.indexOf(pattern) == -1) {
+            // If not found as a quoted string value, try unquoted value (e.g., numbers) with ':' delimiter
             pattern = "\"" + key + "\":";
             start = line.indexOf(pattern) + pattern.length();
             end = line.indexOf(",", start);
@@ -273,13 +235,7 @@ public class JsonDataHandler implements DataStorageInterface {
         return line.substring(start, end).trim();
     }
 
-    /**
-     * Build a Product from a product line and populate its ratings.
-     *
-     * @param l     product line
-     * @param users loaded users (for resolving ratings' customer ids)
-     * @return Product instance
-     */
+    // Parse a product line into a Product object and attempt to attach ratings
     private Product parseProduct(String l, List<User> users) {
         Product p = new Product(
                 extract(l, "id"),
@@ -294,14 +250,7 @@ public class JsonDataHandler implements DataStorageInterface {
         return p;
     }
 
-    /**
-     * Parse embedded ratings ("ratings":{"userId":score,...}) and add them to product.
-     * Logs a warning if a rating references an unknown user.
-     *
-     * @param p     product to populate
-     * @param line  serialized product line
-     * @param users loaded users
-     */
+    // Parse the ratings object within a product line and attach ratings using customer references
     private void parseRatingsInto(Product p, String line, List<User> users) {
         if (line.contains("\"ratings\":{")) {
             int start = line.indexOf("\"ratings\":{") + 10;
@@ -310,12 +259,14 @@ public class JsonDataHandler implements DataStorageInterface {
             if (content.isEmpty())
                 return;
 
+            // Each pair looks like "userId":value
             String[] pairs = content.split(",");
             for (String pair : pairs) {
                 String[] kv = pair.split(":");
                 String userId = kv[0].replace("\"", "").trim();
                 int val = Integer.parseInt(kv[1].trim());
                 Customer customer = null;
+                // Find the Customer object by ID from the already parsed users list
                 for (User u : users) {
                     if (userId.equals(u.getId())) {
                         customer = (Customer) u;
@@ -323,22 +274,19 @@ public class JsonDataHandler implements DataStorageInterface {
                     }
                 }
                 if (customer == null) {
+                    // If a referenced customer is missing, log a warning to stderr
                     System.err.println("customer with " + userId + " ID not found in the system!");
                 }
+                // Even if customer is null, the method call tries to add/update rating with possibly null customer
                 p.addOrUpdateRating(customer, val);
             }
         } else {
-            // Ratings missing for this product — non-fatal, logged for debugging
+            // If ratings key is missing, log a note (could be normal for unrated items)
             System.err.println("Rating for product " + p.getId() + "does not exist!");
         }
     }
 
-    /**
-     * Parse a sale record line into a SaleRecord.
-     *
-     * @param l serialized sale line
-     * @return SaleRecord instance
-     */
+    // Parse a sale record line into a SaleRecord object
     private SaleRecord parseSale(String l) {
         return new SaleRecord(
                 extract(l, "tid"),
