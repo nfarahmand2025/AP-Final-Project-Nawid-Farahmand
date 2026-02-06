@@ -5,6 +5,9 @@ package com.mall;
 import com.mall.ui.MainFrame;
 import javax.swing.*;
 
+
+
+//change
 // Main application class. Contains the program entry point (main method).
 public class App {
     public static void main(String[] args) {
