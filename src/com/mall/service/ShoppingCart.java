@@ -19,7 +19,7 @@ public class ShoppingCart {
     /**
      * Adds a product to the cart. If the product already exists, increases the
      * quantity.
-     *
+     * 
      * @throws IllegalArgumentException if stock is insufficient.
      */
     public void addProduct(Product product, int qty) {
