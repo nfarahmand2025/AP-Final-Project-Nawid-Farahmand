@@ -56,21 +56,4 @@ The project follows **clean object-oriented design**, using **interfaces**, **in
 
 ---
 
-## 📂 Project Structure  
-
-```bash
-ShoppingMallProject/
-│
-├── src/
-│   ├── model/           # Product, User, Cart, etc.
-│   ├── service/         # Business logic (interfaces + implementations)
-│   ├── repository/      # JSON saving/loading layer
-│   ├── ui/              # GUI forms / windows
-│   └── Main.java        # Program entry point
-│
-├── data/
-│   ├── products.json    # Stored products data
-│   └── carts.json       # Stored cart data (optional)
-│
-├── README.md
 └── ap-final-project.pdf
