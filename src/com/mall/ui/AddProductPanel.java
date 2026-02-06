@@ -11,6 +11,19 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
+/**
+ * AddProductPanel is a UI panel for adding or editing products in the admin system.
+ *
+ * Features:
+ * - Supports Add Mode (new product) and Edit Mode (existing product).
+ * - Allows input of name, category, price, stock, and description.
+ * - Supports selecting an image and displaying a preview.
+ * - Saves selected image into "resources/images/products/" folder.
+ *
+ * Save Logic:
+ * - Edit Mode: updates existing product and saves data.
+ * - Add Mode: creates new product, adds it to ProductService, and saves data.
+ */
 public class AddProductPanel extends JPanel {
     private JTextField nameField, priceField, stockField, categoryField;
     private JTextArea descArea;
@@ -46,8 +59,17 @@ public class AddProductPanel extends JPanel {
         categoryField = createStyledTextField();
         priceField = createStyledTextField();
         stockField = createStyledTextField();
-        descArea = new JTextArea(3, 20);
-        descArea.setBorder(BorderFactory.createLineBorder(UIConstants.BORDER_LIGHT));
+
+        // descArea = new JTextArea(3, 20);
+        // descArea.setBorder(BorderFactory.createLineBorder(UIConstants.BORDER_LIGHT));
+
+        descArea = new JTextArea(4, 20);
+        descArea.setLineWrap(true);
+        descArea.setWrapStyleWord(true);
+        descArea.setFont(new JTextField().getFont()); // Match JTextField font
+        JScrollPane descScrollPane = new JScrollPane(descArea);
+        descScrollPane.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(UIConstants.BORDER_LIGHT), new EmptyBorder(5, 10, 5, 10)));
 
         // Image Section
         imagePreview = new JLabel("No Image Selected", SwingConstants.CENTER);
@@ -76,11 +98,13 @@ public class AddProductPanel extends JPanel {
         addLabeledField(body, "Price", priceField, gbc);
         gbc.gridy = 6;
         addLabeledField(body, "Stock", stockField, gbc);
+        gbc.gridy = 8;
+        addLabeledField(body, "Description", descScrollPane, gbc);
 
         // Image UI placement
-        gbc.gridy = 8;
+        gbc.gridy = 10;
         body.add(new JLabel("Product Image"), gbc);
-        gbc.gridy = 9;
+        gbc.gridy = 11;
         JPanel imgPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
         imgPanel.setOpaque(false);
         imgPanel.add(imagePreview);
@@ -148,10 +172,11 @@ public class AddProductPanel extends JPanel {
                 existingProduct.setPrice(price);
                 existingProduct.setStockQty(stock);
                 existingProduct.setDescription(descArea.getText());
+                manager.saveData();
             } else {
                 Product p = new Product(id, nameField.getText(), categoryField.getText(),
                         price, stock, descArea.getText(), finalPath);
-                manager.getCatalog().addProduct(p);
+                manager.getProductService().addProduct(p);
                 manager.saveData();
             }
 
