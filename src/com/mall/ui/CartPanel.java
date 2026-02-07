@@ -8,12 +8,17 @@ import java.awt.*;
 import java.math.BigDecimal;
 
 public class CartPanel extends JPanel {
+    // Container that holds each cart item row (vertical list)
     private JPanel itemsContainer;
+    // Labels showing subtotal and total prices
     private JLabel totalLabel;
     private JLabel subtotalLabel;
+    // Manager providing services like cart, product, sale persistence
     private MallManager manager;
+    // Reference to main application frame for navigation
     private MainFrame parent;
 
+    // Constructor: builds the cart UI and wires actions to manager and parent
     public CartPanel(MainFrame parent, MallManager manager) {
         this.parent = parent;
         this.manager = manager;
@@ -23,14 +28,17 @@ public class CartPanel extends JPanel {
         // --- 1. Header Section ---
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(UIConstants.SURFACE_COLOR);
+        // Add bottom border and padding using UI constants
         headerPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIConstants.BORDER_LIGHT),
                 new EmptyBorder(24, UIConstants.GUTTER, 24, UIConstants.GUTTER)));
 
+        // Page title label
         JLabel header = new JLabel("Shopping Cart");
         header.setFont(UIConstants.H1_FONT);
         header.setForeground(UIConstants.TEXT_PRIMARY);
 
+        // Continue shopping button navigates back to customer catalog
         ModernButton backBtn = new ModernButton("← Continue Shopping");
         backBtn.setPreferredSize(new Dimension(200, 45));
         backBtn.addActionListener(e -> parent.showView("CATALOG_CUSTOMER"));
@@ -54,6 +62,7 @@ public class CartPanel extends JPanel {
         scroll.setBorder(null);
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);
+        // Improve scroll increment for smoother scrolling
         scroll.getVerticalScrollBar().setUnitIncrement(16);
 
         // Right Side: Summary Card
@@ -68,6 +77,7 @@ public class CartPanel extends JPanel {
         add(contentSplit, BorderLayout.CENTER);
     }
 
+    // Builds the summary card UI containing subtotal, total and checkout button
     private JPanel createSummaryCard() {
         JPanel card = new JPanel();
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
@@ -79,6 +89,7 @@ public class CartPanel extends JPanel {
         JLabel title = new JLabel("Order Summary");
         title.setFont(UIConstants.H2_FONT);
 
+        // Initialize subtotal and total labels; values updated on refresh()
         subtotalLabel = new JLabel("Subtotal: $0.00");
         subtotalLabel.setFont(UIConstants.LABEL_FONT);
         subtotalLabel.setForeground(UIConstants.TEXT_SECONDARY);
@@ -89,6 +100,7 @@ public class CartPanel extends JPanel {
 
         ModernButton checkoutBtn = new ModernButton("Confirm & Pay");
         checkoutBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+        // Checkout button triggers purchase flow
         checkoutBtn.addActionListener(e -> handleCheckout());
 
         card.add(title);
@@ -102,13 +114,16 @@ public class CartPanel extends JPanel {
         return card;
     }
 
+    // Refresh the cart UI using the currently authenticated customer's cart
     public void refresh() {
         itemsContainer.removeAll();
-        Customer c = manager.getAuthService().getCurrentCustomer();
+        Customer c = (Customer) manager.getAuthService().getCurrentUser();
 
+        // If no customer or cart empty show empty state
         if (c == null || c.getCart().getItems().isEmpty()) {
             showEmptyState();
         } else {
+            // Otherwise create rows for each cart item and update totals
             for (CartItem item : c.getCart().getItems()) {
                 itemsContainer.add(createItemRow(item));
                 itemsContainer.add(Box.createRigidArea(new Dimension(0, 16)));
@@ -119,6 +134,7 @@ public class CartPanel extends JPanel {
         repaint();
     }
 
+    // Display empty cart message and reset summary labels
     private void showEmptyState() {
         JLabel emptyMsg = new JLabel("Your cart is empty");
         emptyMsg.setFont(UIConstants.H2_FONT);
@@ -133,12 +149,14 @@ public class CartPanel extends JPanel {
         totalLabel.setText("Total: $0.00");
     }
 
+    // Update subtotal and total labels using cart total calculation
     private void updateTotals(Customer c) {
         String formattedTotal = String.format("%.2f", c.getCart().calculateTotal());
         subtotalLabel.setText("Subtotal: $" + formattedTotal);
         totalLabel.setText("Total: $" + formattedTotal);
     }
 
+    // Create a UI row representing a single item in the cart with controls
     private JPanel createItemRow(CartItem item) {
         JPanel row = new JPanel(new BorderLayout(20, 0));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
@@ -147,7 +165,7 @@ public class CartPanel extends JPanel {
                 BorderFactory.createLineBorder(UIConstants.BORDER_LIGHT, 1),
                 new EmptyBorder(16, 20, 16, 20)));
 
-        // Product Info
+        // Product Info: name and price
         JPanel info = new JPanel(new GridLayout(2, 1, 0, 4));
         info.setOpaque(false);
         JLabel name = new JLabel(item.getProduct().getName());
@@ -169,12 +187,13 @@ public class CartPanel extends JPanel {
 
         JButton removeBtn = new JButton("Remove");
         removeBtn.setFont(UIConstants.LABEL_FONT);
+        // Use a red foreground color for the remove action to signify danger
         removeBtn.setForeground(new Color(239, 68, 68)); // Red color for danger actions
         removeBtn.setBorder(null);
         removeBtn.setContentAreaFilled(false);
         removeBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        // Listeners for modifications
+        // Listeners for modifications: update quantity or remove item
         minusBtn.addActionListener(e -> {
             if (item.getQuantity() > 1) {
                 item.setQuantity(item.getQuantity() - 1);
@@ -188,7 +207,8 @@ public class CartPanel extends JPanel {
             refresh();
         });
         removeBtn.addActionListener(e -> {
-            manager.getAuthService().getCurrentCustomer().getCart().remove(item);
+            Customer c = (Customer) manager.getAuthService().getCurrentUser();
+            c.getCart().remove(item);
             manager.saveData();
             refresh();
         });
@@ -204,6 +224,7 @@ public class CartPanel extends JPanel {
         return row;
     }
 
+    // Creates a compact button used for increment/decrement quantity
     private JButton createQtyBtn(String text) {
         JButton b = new JButton(text);
         b.setPreferredSize(new Dimension(32, 32));
@@ -215,8 +236,9 @@ public class CartPanel extends JPanel {
         return b;
     }
 
+    // Handles checkout flow: validates balance, creates sale records, and persists
     private void handleCheckout() {
-        Customer c = manager.getAuthService().getCurrentCustomer();
+        Customer c = (Customer) manager.getAuthService().getCurrentUser();
         if (c == null || c.getCart().getItems().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Your cart is empty!", "Error", JOptionPane.ERROR_MESSAGE);
             return;
@@ -258,6 +280,7 @@ public class CartPanel extends JPanel {
                     now // Purchase time
             );
 
+            // Add sale record to sale service for later persistence
             manager.getSaleService().addSale(record);
         }
 
