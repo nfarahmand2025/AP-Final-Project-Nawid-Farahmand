@@ -11,26 +11,19 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
-/**
- * AddProductPanel is a UI panel for adding or editing products in the admin system.
- *
- * Features:
- * - Supports Add Mode (new product) and Edit Mode (existing product).
- * - Allows input of name, category, price, stock, and description.
- * - Supports selecting an image and displaying a preview.
- * - Saves selected image into "resources/images/products/" folder.
- *
- * Save Logic:
- * - Edit Mode: updates existing product and saves data.
- * - Add Mode: creates new product, adds it to ProductService, and saves data.
- */
 public class AddProductPanel extends JPanel {
+    // Input fields for product properties
     private JTextField nameField, priceField, stockField, categoryField;
+    // Multi-line description area
     private JTextArea descArea;
+    // Label used to preview selected image
     private JLabel imagePreview;
+    // Temporarily holds a user-selected image file before saving
     private File tempSelectedFile;
+    // When editing an existing product, this holds the product being edited
     private Product existingProduct;
 
+    // Constructor: builds the UI and optionally pre-fills fields for edit mode
     public AddProductPanel(MainFrame parent, MallManager manager, Product productToEdit) {
         this.existingProduct = productToEdit;
         boolean isEditMode = (existingProduct != null);
@@ -42,6 +35,7 @@ public class AddProductPanel extends JPanel {
         JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT));
         header.setBackground(UIConstants.SURFACE_COLOR);
         header.setBorder(new EmptyBorder(16, UIConstants.GUTTER, 16, UIConstants.GUTTER));
+        // Title reflects whether we are adding a new product or editing an existing one
         JLabel title = new JLabel(isEditMode ? "EDIT PRODUCT: " + existingProduct.getId() : "ADD NEW PRODUCT");
         title.setFont(UIConstants.H2_FONT);
         header.add(title);
@@ -55,37 +49,40 @@ public class AddProductPanel extends JPanel {
         gbc.weightx = 1.0;
 
         // Fields
+        // createStyledTextField() centralizes visual style for all single-line fields
         nameField = createStyledTextField();
         categoryField = createStyledTextField();
         priceField = createStyledTextField();
         stockField = createStyledTextField();
 
-        // descArea = new JTextArea(3, 20);
-        // descArea.setBorder(BorderFactory.createLineBorder(UIConstants.BORDER_LIGHT));
-
+        // Description area: multi-line with wrapping and scroll pane
         descArea = new JTextArea(4, 20);
         descArea.setLineWrap(true);
         descArea.setWrapStyleWord(true);
+        // Match JTextField font to keep visual consistency
         descArea.setFont(new JTextField().getFont()); // Match JTextField font
         JScrollPane descScrollPane = new JScrollPane(descArea);
         descScrollPane.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UIConstants.BORDER_LIGHT), new EmptyBorder(5, 10, 5, 10)));
 
         // Image Section
+        // imagePreview shows the currently selected image or a placeholder text
         imagePreview = new JLabel("No Image Selected", SwingConstants.CENTER);
         imagePreview.setPreferredSize(new Dimension(150, 150));
         imagePreview.setBorder(BorderFactory.createLineBorder(UIConstants.BORDER_LIGHT));
 
+        // Button to open file chooser for selecting product image
         ModernButton pickImgBtn = new ModernButton("Select Image");
         pickImgBtn.addActionListener(e -> selectImage());
 
-        // Pre-fill Logic
+        // Pre-fill Logic: when editing fill fields with existing product values
         if (isEditMode) {
             nameField.setText(existingProduct.getName());
             categoryField.setText(existingProduct.getCategory());
             priceField.setText(existingProduct.getPrice().toString());
             stockField.setText(String.valueOf(existingProduct.getStockQty()));
             descArea.setText(existingProduct.getDescription());
+            // Show existing product image in preview if available
             updatePreview(new File(existingProduct.getImagePath()));
         }
 
@@ -101,7 +98,7 @@ public class AddProductPanel extends JPanel {
         gbc.gridy = 8;
         addLabeledField(body, "Description", descScrollPane, gbc);
 
-        // Image UI placement
+        // Image UI placement: label and button grouped together
         gbc.gridy = 10;
         body.add(new JLabel("Product Image"), gbc);
         gbc.gridy = 11;
@@ -115,6 +112,7 @@ public class AddProductPanel extends JPanel {
         JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 20));
         footer.setOpaque(false);
         ModernButton saveBtn = new ModernButton(isEditMode ? "Save Updates" : "Add Product");
+        // Save action handles both add and edit flows and persists changes
         saveBtn.addActionListener(e -> handleSave(manager, parent, isEditMode));
 
         ModernButton backBtn = new ModernButton("Cancel");
@@ -128,6 +126,7 @@ public class AddProductPanel extends JPanel {
         add(footer, BorderLayout.SOUTH);
     }
 
+    // Opens a JFileChooser to let the user pick an image file for the product
     private void selectImage() {
         JFileChooser chooser = new JFileChooser();
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
@@ -136,6 +135,7 @@ public class AddProductPanel extends JPanel {
         }
     }
 
+    // Update the imagePreview label with a scaled image when a file is selected
     private void updatePreview(File file) {
         if (file != null && file.exists()) {
             ImageIcon icon = new ImageIcon(file.getPath());
@@ -145,9 +145,12 @@ public class AddProductPanel extends JPanel {
         }
     }
 
+    // Handles saving a new product or applying updates to an existing product
     private void handleSave(MallManager manager, MainFrame parent, boolean isEdit) {
         try {
+            // Generate a new id for new products; reuse existing id in edit mode
             String id = isEdit ? existingProduct.getId() : UUID.randomUUID().toString().substring(0, 8);
+            // Default to existing product image path when editing; otherwise empty until image saved
             String finalPath = existingProduct != null ? existingProduct.getImagePath() : "";
 
             // Handle Image Saving/Replacing
@@ -159,14 +162,17 @@ public class AddProductPanel extends JPanel {
                 String extension = getFileExtension(tempSelectedFile);
                 File destination = new File(dir, id + extension);
 
+                // Copy the selected file into the application's product images directory
                 Files.copy(tempSelectedFile.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 finalPath = destination.getPath();
             }
 
+            // Parse numeric fields from text inputs; may throw NumberFormatException which is caught below
             BigDecimal price = new BigDecimal(priceField.getText());
             int stock = Integer.parseInt(stockField.getText());
 
             if (isEdit) {
+                // Update fields of the existing product instance and persist
                 existingProduct.setName(nameField.getText());
                 existingProduct.setCategory(categoryField.getText());
                 existingProduct.setPrice(price);
@@ -174,25 +180,30 @@ public class AddProductPanel extends JPanel {
                 existingProduct.setDescription(descArea.getText());
                 manager.saveData();
             } else {
+                // Create a new Product and add it to the product service
                 Product p = new Product(id, nameField.getText(), categoryField.getText(),
                         price, stock, descArea.getText(), finalPath);
                 manager.getProductService().addProduct(p);
                 manager.saveData();
             }
 
+            // Inform the user of success and navigate back to the admin catalog view
             JOptionPane.showMessageDialog(this, "Success!");
             parent.showView("CATALOG_ADMIN");
         } catch (Exception ex) {
+            // Show an error dialog with the exception message if anything goes wrong
             JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    // Returns the file extension (including dot) for the provided file name; defaults to .jpg
     private String getFileExtension(File file) {
         String name = file.getName();
         int lastDot = name.lastIndexOf('.');
         return (lastDot == -1) ? ".jpg" : name.substring(lastDot);
     }
 
+    // Helper that adds a label and the given field to the panel using provided GridBagConstraints
     private void addLabeledField(JPanel p, String label, JComponent field, GridBagConstraints gbc) {
         gbc.insets = new Insets(0, 0, 4, 0);
         p.add(new JLabel(label), gbc);
@@ -201,6 +212,7 @@ public class AddProductPanel extends JPanel {
         p.add(field, gbc);
     }
 
+    // Factory for creating styled single-line text fields used across the form
     private JTextField createStyledTextField() {
         JTextField f = new JTextField();
         f.setPreferredSize(new Dimension(0, 40));
