@@ -7,91 +7,70 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.List;
 
-/*
- * AdminDashboardPanel
- * -------------------
- * This panel is the main dashboard for the Admin user.
- * It provides:
- *  - Search functionality to find products by name
- *  - A product grid display using ProductCard
- *  - Buttons for Add Product, Sales History, and Logout
- *  - Auto scroll reset after refreshing the product grid
- */
 public class AdminDashboardPanel extends JPanel {
-
-    // Reference to the main application frame for navigation
+    // Reference to the main application frame for navigation between views
     private MainFrame parent;
-
-    // MallManager is used to access product services and manage data
+    // Manager that provides access to services like productService and persistence
     private MallManager manager;
-
-    // Panel that holds the product cards in a grid layout
+    // Panel that holds product cards in a grid layout
     private JPanel gridPanel;
-
-    // Search input field
+    // Search input used to filter products by name
     private JTextField searchField;
-
-    // Scroll pane to allow scrolling through product cards
+    // Scroll pane wrapping the gridPanel to provide scrolling for long lists
     private JScrollPane scrollPane;
 
-    /*
-     * Constructor: Initializes the Admin Dashboard UI components
-     */
+    // Constructor: builds the admin dashboard UI and wires up actions
     public AdminDashboardPanel(MainFrame parent, MallManager manager) {
         this.parent = parent;
         this.manager = manager;
-
-        // Set layout and background theme
         setLayout(new BorderLayout());
         setBackground(UIConstants.BG_COLOR);
 
-        // -----------------------------
-        // 1. Navigation Bar Section
-        // -----------------------------
+        // --- 1. Navigation Bar ---
         JPanel navBar = new JPanel(new BorderLayout());
         navBar.setBackground(UIConstants.SURFACE_COLOR);
         navBar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, UIConstants.BORDER_LIGHT),
                 new EmptyBorder(16, UIConstants.GUTTER, 16, UIConstants.GUTTER)));
 
-        // Left Side: Title and Search
+        // Left Side: Title & Search
         JPanel leftWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 0));
         leftWrapper.setOpaque(false);
 
+        // Title label for the admin dashboard
         JLabel adminTitle = new JLabel("ADMIN PANEL");
         adminTitle.setFont(UIConstants.H2_FONT);
         adminTitle.setForeground(UIConstants.PRIMARY_COLOR);
 
-        // Search input field
+        // Search Component
         searchField = new JTextField(15);
-        styleSearchField(searchField);
-
-        // Search button triggers refresh of the product grid
+        styleSearchField(searchField); // Apply visual styling to the search field
         ModernButton searchBtn = new ModernButton("Search");
         searchBtn.setPreferredSize(new Dimension(90, 32));
+        // When search button is clicked, refresh the product grid using the search text
         searchBtn.addActionListener(e -> refreshProductGrid());
 
         leftWrapper.add(adminTitle);
         leftWrapper.add(searchField);
         leftWrapper.add(searchBtn);
 
-        // Right Side: Admin action buttons
+        // Right Side: Global Actions (Add product, view sales, logout)
         JPanel actionsWrapper = new JPanel(new FlowLayout(FlowLayout.RIGHT, 16, 0));
         actionsWrapper.setOpaque(false);
 
-        // Add product button navigates to Add Product page
         ModernButton addProdBtn = new ModernButton("+ Add Product");
         addProdBtn.setPreferredSize(new Dimension(150, 45));
+        // Navigate to the add product view when clicked
         addProdBtn.addActionListener(e -> parent.showView("ADD_PRODUCT"));
 
-        // Sales history button navigates to Sales History page
         ModernButton salesHistoryBtn = new ModernButton("Sales History");
         salesHistoryBtn.setPreferredSize(new Dimension(120, 45));
+        // Navigate to the sales history view
         salesHistoryBtn.addActionListener(e -> parent.showView("SALES_HISTORY"));
 
-        // Logout button navigates back to login screen
         ModernButton logoutBtn = new ModernButton("Logout");
         logoutBtn.setPreferredSize(new Dimension(100, 45));
+        // Navigate back to the login view (performing logout sandboxed here)
         logoutBtn.addActionListener(e -> parent.showView("LOGIN"));
 
         actionsWrapper.add(addProdBtn);
@@ -101,30 +80,24 @@ public class AdminDashboardPanel extends JPanel {
         navBar.add(leftWrapper, BorderLayout.WEST);
         navBar.add(actionsWrapper, BorderLayout.EAST);
 
-        // -----------------------------
-        // 2. Product Grid Section
-        // -----------------------------
+        // --- 2. Main Content (Product Grid) ---
+        // Grid holds ProductCard components in 3 columns and dynamic rows
         gridPanel = new JPanel(new GridLayout(0, 3, UIConstants.GRID_GAP, UIConstants.GRID_GAP));
         gridPanel.setBackground(UIConstants.BG_COLOR);
+        gridPanel.setBorder(
+                new EmptyBorder(UIConstants.GUTTER, UIConstants.GUTTER, UIConstants.GUTTER, UIConstants.GUTTER));
 
-        // Adds padding around product grid
-        gridPanel.setBorder(new EmptyBorder(
-                UIConstants.GUTTER, UIConstants.GUTTER,
-                UIConstants.GUTTER, UIConstants.GUTTER));
-
-        // ScrollPane allows scrolling if products exceed screen size
+        // Scroll pane wraps the grid to allow vertical scrolling for long catalogs
         scrollPane = new JScrollPane(gridPanel);
         scrollPane.setBorder(null);
+        // Improve scroll smoothness/step
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-        // Add components to main panel
         add(navBar, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
     }
 
-    /*
-     * Styles the search field (font, border, padding)
-     */
+    // Apply consistent styling to the search input to match the app's design system
     private void styleSearchField(JTextField field) {
         field.setFont(UIConstants.INPUT_FONT);
         field.setPreferredSize(new Dimension(180, 32));
@@ -133,38 +106,29 @@ public class AdminDashboardPanel extends JPanel {
                 BorderFactory.createEmptyBorder(0, 10, 0, 10)));
     }
 
-    /*
-     * Refreshes the product grid based on search results.
-     * - Clears old product cards
-     * - Loads new products from ProductService
-     * - Adds ProductCard UI components dynamically
-     * - Resets scrollbar to the top after refresh
-     */
+    // Rebuilds the product grid based on the current search query.
+    // Queries the product service for matching results and populates ProductCard components.
     public void refreshProductGrid() {
-
-        // Remove all old components from grid panel
         gridPanel.removeAll();
-
-        // Get product list based on search text
+        // Use the product service searchByName which performs case-insensitive substring search
         List<Product> products = manager.getProductService().searchByName(searchField.getText());
 
-        // If no products found, display a message
         if (products.isEmpty()) {
+            // Show an empty message when no products match the search
             JLabel emptyMsg = new JLabel("No products found for this search.");
             emptyMsg.setFont(UIConstants.CAPTION_FONT);
             gridPanel.add(emptyMsg);
         } else {
-            // Add each product as a ProductCard component
+            // Create and add a ProductCard for each matching product
             for (Product p : products) {
                 gridPanel.add(new ProductCard(p, manager, parent));
             }
         }
-
-        // Refresh UI display
+        // Refresh layout and repaint to reflect new content
         gridPanel.revalidate();
         gridPanel.repaint();
 
-        // Reset scroll bar to the top after updating grid
+        // Scroll to top of the grid after refresh to show the first results
         SwingUtilities.invokeLater(() -> {
             if (scrollPane != null && scrollPane.getVerticalScrollBar() != null) {
                 scrollPane.getVerticalScrollBar().setValue(0);
