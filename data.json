@@ -1,0 +1,27 @@
+{
+  "users": [
+    {"role":"ADMIN", "id":"A101", "user":"admin", "pass":"12345", "bal":"0"},
+    {"role":"ADMIN", "id":"A102", "user":"sara_manager", "pass":"manager2026", "bal":"0"},
+    {"role":"ADMIN", "id":"A103", "user":"boss", "pass":"root", "bal":"0"},
+    {"role":"CUSTOMER", "id":"c9acff12-a6b1-4f68-a126-0cbd193b88e7", "user":"emp", "pass":"12345", "bal":"526131"},
+    {"role":"CUSTOMER", "id":"eca7dd91-21cf-4ee3-90c5-58d15820f6b6", "user":"naveed", "pass":"12345", "bal":"19999950680"},
+    {"role":"CUSTOMER", "id":"c6e0ac54-0e5e-4c9b-9b31-9fbb4e33bd3c", "user":"ramazan", "pass":"123456", "bal":"0"}
+  ],
+  "products": [
+    {"id":"585ad3df", "name":"rice", "cat":"Food", "price":"20", "stock":89, "desc":"it is good", "img":"resources\images\products\585ad3df.jpg", "ratings":{"c9acff12-a6b1-4f68-a126-0cbd193b88e7":1,"eca7dd91-21cf-4ee3-90c5-58d15820f6b6":3}},
+    {"id":"56182156", "name":"Ramazan", "cat":"Food", "price":"50000", "stock":0, "desc":"Ramazan has a pen", "img":"resources\images\products\56182156.jpg", "ratings":{}},
+    {"id":"923df6f2", "name":"nawid", "cat":"electronic", "price":"800000", "stock":10, "desc":"donky", "img":"", "ratings":{"c9acff12-a6b1-4f68-a126-0cbd193b88e7":5,"c6e0ac54-0e5e-4c9b-9b31-9fbb4e33bd3c":2}},
+    {"id":"12256296", "name":"Laptop", "cat":"Tech", "price":"60000", "stock":34, "desc":"klsn\vkkkdsvkdk l;;kop", "img":"resources\images\products\12256296.jpg", "ratings":{"eca7dd91-21cf-4ee3-90c5-58d15820f6b6":3}}
+  ],
+  "sales": [
+    {"tid":"T19C2496AACF", "user":"emp", "prod":"rice", "qty":5, "amt":"100", "date":"2026-02-03T18:39:39.870952200"},
+    {"tid":"T19C24CE838D", "user":"emp", "prod":"nawid", "qty":1, "amt":"800000", "date":"2026-02-03T22:10:39.874407100"},
+    {"tid":"T19C24F5F619", "user":"naveed", "prod":"Ramazan", "qty":1, "amt":"50000", "date":"2026-02-03T22:53:45.072503800"},
+    {"tid":"T19C2F0CF0BC", "user":"naveed", "prod":"rice", "qty":6, "amt":"120", "date":"2026-02-05T21:55:03.195201600"}
+  ],
+  "carts": [
+    {"userId":"c9acff12-a6b1-4f68-a126-0cbd193b88e7", "items":[]},
+    {"userId":"eca7dd91-21cf-4ee3-90c5-58d15820f6b6", "items":[]},
+    {"userId":"c6e0ac54-0e5e-4c9b-9b31-9fbb4e33bd3c", "items":[]}
+  ]
+}
